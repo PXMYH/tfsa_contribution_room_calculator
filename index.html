@@ -86,11 +86,14 @@
             </div>
 
             <div class="mb-3">
-                <label for="transaction-type" class="form-label">Transaction Type:</label>
-                <select id="transaction-type" class="form-select">
-                    <option value="deposit">Deposit</option>
-                    <option value="withdraw">Withdraw</option>
-                </select>
+                <label class="form-label">Transaction Type:</label>
+                <div class="btn-group w-100" role="group" aria-label="Transaction type selection">
+                    <input type="radio" class="btn-check" name="transaction-type" id="deposit" value="deposit" checked>
+                    <label class="btn btn-outline-primary" for="deposit">Deposit</label>
+
+                    <input type="radio" class="btn-check" name="transaction-type" id="withdraw" value="withdraw">
+                    <label class="btn btn-outline-primary" for="withdraw">Withdraw</label>
+                </div>
             </div>
 
             <div class="mb-3">
@@ -134,7 +137,7 @@
         const yearOfBirthInput = document.getElementById('year-of-birth');
         const taxResidencyInput = document.getElementById('tax-residency');
         const transactionDateInput = document.getElementById('transaction-date');
-        const transactionTypeInput = document.getElementById('transaction-type');
+        const transactionTypeInputs = document.querySelectorAll('input[name="transaction-type"]');
         const amountInput = document.getElementById('amount');
         const currentRoomDisplay = document.getElementById('current-room');
         const remainingRoomDisplay = document.getElementById('remaining-room');
@@ -194,7 +197,7 @@
         function addTransaction() {
             const username = usernameInput.value;
             const date = transactionDateInput.value;
-            const type = transactionTypeInput.value;
+            const type = document.querySelector('input[name="transaction-type"]:checked').value;
             const amount = parseFloat(amountInput.value);
 
             if (!date || isNaN(amount) || amount <= 0) {
@@ -207,7 +210,7 @@
             updateTransactionHistory();
 
             transactionDateInput.value = '';
-            transactionTypeInput.value = 'deposit';
+            document.getElementById('deposit').checked = true;
             amountInput.value = '';
         }
 
