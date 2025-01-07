@@ -28,8 +28,36 @@
         }
         .form-buttons {
             display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
             justify-content: space-between;
             margin-top: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-buttons {
+                flex-direction: column;
+            }
+            .form-buttons > div {
+                display: flex;
+                gap: 10px;
+            }
+            .form-buttons button {
+                flex: 1;
+            }
+            .table {
+                font-size: 0.9rem;
+            }
+            select.form-select {
+                padding-right: 2rem;
+            }
+        }
+
+        /* Ensure proper padding for mobile selects */
+        .form-select {
+            padding-right: 2.5rem !important;
+            text-overflow: ellipsis;
+            overflow: hidden;
         }
     </style>
 </head>
@@ -71,10 +99,10 @@
             </div>
 
             <div class="form-buttons">
-                <button type="button" id="add-transaction" class="btn btn-primary">Add Transaction</button>
-                <div>
-                    <button type="button" id="save-session" class="btn btn-success me-2">Save Session</button>
-                    <button type="button" id="clear-data" class="btn btn-secondary">Clear Data</button>
+                <button type="button" id="add-transaction" class="btn btn-primary w-100 w-md-auto">Add Transaction</button>
+                <div class="d-flex gap-2 w-100 w-md-auto">
+                    <button type="button" id="save-session" class="btn btn-success flex-fill">Save Session</button>
+                    <button type="button" id="clear-data" class="btn btn-secondary flex-fill">Clear Data</button>
                 </div>
             </div>
         </form>
