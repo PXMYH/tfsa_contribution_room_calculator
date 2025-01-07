@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TFSA Contribution Room Calculator</title>
-    <link 
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" 
-        rel="stylesheet" 
-        integrity="sha384-QWVPHl3ZBA2m31fPHxgOgDA72PtKfs6gttLtAJR8PMYf/Bk86P9Br2cxpbQgzw06" 
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+        integrity="sha384-QWVPHl3ZBA2m31fPHxgOgDA72PtKfs6gttLtAJR8PMYf/Bk86P9Br2cxpbQgzw06"
         crossorigin="anonymous">
     <style>
         body {
@@ -37,26 +37,38 @@
     <div class="container">
         <h1 class="text-center mb-4">TFSA Contribution Room Calculator</h1>
         <form id="tfsa-form">
-            <label for="username">Username:</label>
-            <input type="text" id="username" placeholder="Enter username" required>
+            <div class="mb-3">
+                <label for="username" class="form-label">Username:</label>
+                <input type="text" id="username" class="form-control" placeholder="Enter username" required>
+            </div>
 
-            <label for="year-of-birth">Year of Birth:</label>
-            <input type="number" id="year-of-birth" placeholder="Enter year" required>
+            <div class="mb-3">
+                <label for="year-of-birth" class="form-label">Year of Birth:</label>
+                <input type="number" id="year-of-birth" class="form-control" placeholder="Enter year" required>
+            </div>
 
-            <label for="tax-residency">Year Became a Canadian Tax Resident:</label>
-            <input type="number" id="tax-residency" placeholder="Enter year" required>
+            <div class="mb-3">
+                <label for="tax-residency" class="form-label">Year Became a Canadian Tax Resident:</label>
+                <input type="number" id="tax-residency" class="form-control" placeholder="Enter year" required>
+            </div>
 
-            <label for="transaction-date">Transaction Date:</label>
-            <input type="date" id="transaction-date" class="form-control" required>
+            <div class="mb-3">
+                <label for="transaction-date" class="form-label">Transaction Date:</label>
+                <input type="date" id="transaction-date" class="form-control" required>
+            </div>
 
-            <label for="transaction-type">Transaction Type:</label>
-            <select id="transaction-type" class="form-select">
-                <option value="deposit">Deposit</option>
-                <option value="withdraw">Withdraw</option>
-            </select>
+            <div class="mb-3">
+                <label for="transaction-type" class="form-label">Transaction Type:</label>
+                <select id="transaction-type" class="form-select">
+                    <option value="deposit">Deposit</option>
+                    <option value="withdraw">Withdraw</option>
+                </select>
+            </div>
 
-            <label for="amount">Amount:</label>
-            <input type="number" id="amount" class="form-control" placeholder="Enter amount" required>
+            <div class="mb-3">
+                <label for="amount" class="form-label">Amount:</label>
+                <input type="number" id="amount" class="form-control" placeholder="Enter amount" required>
+            </div>
 
             <div class="form-buttons">
                 <button type="button" id="add-transaction" class="btn btn-primary">Add Transaction</button>
@@ -279,4 +291,3 @@
     </script>
 </body>
 </html>
-
