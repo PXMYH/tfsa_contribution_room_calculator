@@ -178,6 +178,27 @@
         document.getElementById('sort-date').addEventListener('click', () => sortTransactions('date'));
         document.getElementById('sort-type').addEventListener('click', () => sortTransactions('type'));
 
+        function calculateWithdrawalCarryForward() {
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
+            
+            // Reset withdrawal carry forward
+            withdrawalCarryForward = 0;
+            
+            // Calculate withdrawals from previous year
+            const lastYearWithdrawals = transactions
+                .filter(t => {
+                    const transactionYear = new Date(t.date).getFullYear();
+                    return t.type === 'withdraw' && transactionYear === currentYear - 1;
+                })
+                .reduce((sum, t) => sum + t.amount, 0);
+            
+            // Add last year's withdrawals to next year's contribution room
+            withdrawalCarryForward = lastYearWithdrawals;
+            
+            return withdrawalCarryForward;
+        }
+
         function calculateContributionRoom() {
             const yearOfBirth = parseInt(yearOfBirthInput.value);
             const residencyYear = parseInt(taxResidencyInput.value);
@@ -190,6 +211,9 @@
                     availableRoom += annualLimits[year];
                 }
             }
+
+            // Calculate withdrawal carry forward
+            calculateWithdrawalCarryForward();
 
             updateContributionRoom();
         }
@@ -282,9 +306,15 @@
         function sortTransactions(field) {
             sortDirection[field] *= -1; // Toggle between ascending and descending
             transactions.sort((a, b) => {
-                if (a[field] < b[field]) return -1 * sortDirection[field];
-                if (a[field] > b[field]) return 1 * sortDirection[field];
-                return 0;
+                if (field === 'date') {
+                    // Convert dates to timestamps for comparison
+                    const dateA = new Date(a.date).getTime();
+                    const dateB = new Date(b.date).getTime();
+                    return (dateA - dateB) * sortDirection[field];
+                } else {
+                    // For type field
+                    return (a[field] < b[field] ? -1 : 1) * sortDirection[field];
+                }
             });
             updateTransactionHistory();
         }
