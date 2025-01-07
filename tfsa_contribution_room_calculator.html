@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TFSA Contribution Room Calculator</title>
+    <style>
+        body {
+            font-family: "Chalkboard SE", Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        label, input, select, button {
+            display: block;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        .remove-btn {
+            color: red;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+        .session-list {
+            margin-top: 20px;
+        }
+        .session-item {
+            color: blue;
+            cursor: pointer;
+            text-decoration: underline;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TFSA Contribution Room Calculator</h1>
+        <form id="tfsa-form">
+            <label for="username">Username:</label>
+            <input type="text" id="username" placeholder="Enter username" required>
+
+            <label for="year-of-birth">Year of Birth:</label>
+            <input type="number" id="year-of-birth" placeholder="Enter year" required>
+
+            <label for="tax-residency">Year Became a Canadian Tax Resident:</label>
+            <input type="number" id="tax-residency" placeholder="Enter year" required>
+
+            <label for="transaction-date">Transaction Date:</label>
+            <input type="date" id="transaction-date" required>
+
+            <label for="transaction-type">Transaction Type:</label>
+            <select id="transaction-type">
+                <option value="deposit">Deposit</option>
+                <option value="withdraw">Withdraw</option>
+            </select>
+
+            <label for="amount">Amount:</label>
+            <input type="number" id="amount" placeholder="Enter amount" required>
+
+            <button type="button" id="add-transaction">Add Transaction</button>
+            <button type="button" id="save-session">Save Session</button>
+            <button type="button" id="clear-data">Clear Data</button>
+        </form>
+
+        <h2>Contribution Room</h2>
+        <p id="current-room">Available Contribution Room: </p>
+        <p id="remaining-room">Remaining Contribution Room: </p>
+
+        <h2>Transaction History</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th id="sort-date" style="cursor: pointer;">Date ⬍</th>
+                    <th id="sort-type" style="cursor: pointer;">Type ⬍</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="transaction-history">
+            </tbody>
+        </table>
+
+        <h2>Saved Sessions</h2>
+        <div class="session-list" id="session-list"></div>
+    </div>
+
+    <script>
+        const usernameInput = document.getElementById('username');
+        const yearOfBirthInput = document.getElementById('year-of-birth');
+        const taxResidencyInput = document.getElementById('tax-residency');
+        const transactionDateInput = document.getElementById('transaction-date');
+        const transactionTypeInput = document.getElementById('transaction-type');
+        const amountInput = document.getElementById('amount');
+        const currentRoomDisplay = document.getElementById('current-room');
+        const remainingRoomDisplay = document.getElementById('remaining-room');
+        const transactionHistory = document.getElementById('transaction-history');
+        const addTransactionButton = document.getElementById('add-transaction');
+        const saveSessionButton = document.getElementById('save-session');
+        const clearDataButton = document.getElementById('clear-data');
+        const sessionList = document.getElementById('session-list');
+
+        const annualLimits = {
+            2009: 5000,
+            2010: 5000,
+            2011: 5000,
+            2012: 5000,
+            2013: 5500,
+            2014: 5500,
+            2015: 10000,
+            2016: 5500,
+            2017: 5500,
+            2018: 5500,
+            2019: 6000,
+            2020: 6000,
+            2021: 6000,
+            2022: 6000,
+            2023: 6500,
+            2024: 7000,
+            2025: 7000
+        };
+
+        let availableRoom = 0;
+        let withdrawalCarryForward = 0;
+        let transactions = [];
+        let sortDirection = { date: 1, type: 1 }; // 1 for ascending, -1 for descending
+
+        addTransactionButton.addEventListener('click', addTransaction);
+        saveSessionButton.addEventListener('click', saveSession);
+        clearDataButton.addEventListener('click', clearData);
+        document.getElementById('sort-date').addEventListener('click', () => sortTransactions('date'));
+        document.getElementById('sort-type').addEventListener('click', () => sortTransactions('type'));
+
+        function calculateContributionRoom() {
+            const yearOfBirth = parseInt(yearOfBirthInput.value);
+            const residencyYear = parseInt(taxResidencyInput.value);
+            const currentYear = new Date().getFullYear();
+            const eligibilityYear = Math.max(yearOfBirth + 18, residencyYear);
+
+            availableRoom = 0;
+            for (let year = eligibilityYear; year <= currentYear; year++) {
+                if (annualLimits[year]) {
+                    availableRoom += annualLimits[year];
+                }
+            }
+
+            updateContributionRoom();
+        }
+
+        function addTransaction() {
+            const username = usernameInput.value;
+            const date = transactionDateInput.value;
+            const type = transactionTypeInput.value;
+            const amount = parseFloat(amountInput.value);
+
+            if (!date || isNaN(amount) || amount <= 0) {
+                alert('Please provide valid transaction details.');
+                return;
+            }
+
+            transactions.push({ date: new Date(date), type, amount });
+            calculateContributionRoom();
+            updateTransactionHistory();
+
+            transactionDateInput.value = '';
+            transactionTypeInput.value = 'deposit';
+            amountInput.value = '';
+        }
+
+        function saveSession() {
+            const username = usernameInput.value;
+            if (!username) {
+                alert('Please enter a username to save the session.');
+                return;
+            }
+
+            const sessionData = {
+                username,
+                yearOfBirth: yearOfBirthInput.value,
+                taxResidency: taxResidencyInput.value,
+                transactions
+            };
+
+            localStorage.setItem(`tfsa_${username}`, JSON.stringify(sessionData));
+            displaySavedSessions();
+            clearData();
+        }
+
+        function clearData() {
+            yearOfBirthInput.value = '';
+            taxResidencyInput.value = '';
+            transactionDateInput.value = '';
+            transactionTypeInput.value = 'deposit';
+            amountInput.value = '';
+            transactions = [];
+            withdrawalCarryForward = 0;
+            availableRoom = 0;
+
+            updateContributionRoom();
+            updateTransactionHistory();
+        }
+
+        function updateContributionRoom() {
+            const totalDeposits = transactions.filter(t => t.type === 'deposit').reduce((sum, t) => sum + t.amount, 0);
+            const totalWithdrawals = transactions.filter(t => t.type === 'withdraw').reduce((sum, t) => sum + t.amount, 0);
+            const remainingContributionRoom = availableRoom - totalDeposits + withdrawalCarryForward;
+
+            currentRoomDisplay.textContent = `Available Contribution Room: $${availableRoom.toFixed(2)}`;
+            remainingRoomDisplay.textContent = `Remaining Contribution Room: $${remainingContributionRoom.toFixed(2)}`;
+        }
+
+        function updateTransactionHistory() {
+            transactionHistory.innerHTML = '';
+            transactions.forEach((t, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(t.date).toISOString().split('T')[0]}</td>
+                    <td>${t.type}</td>
+                    <td>$${t.amount.toFixed(2)}</td>
+                    <td><button class="remove-btn" data-index="${index}">Remove</button></td>
+                `;
+                transactionHistory.appendChild(row);
+            });
+
+            document.querySelectorAll('.remove-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = e.target.getAttribute('data-index');
+                    transactions.splice(index, 1);
+                    updateTransactionHistory();
+                    updateContributionRoom();
+                });
+            });
+        }
+
+        function sortTransactions(field) {
+            sortDirection[field] *= -1; // Toggle between ascending and descending
+            transactions.sort((a, b) => {
+                if (a[field] < b[field]) return -1 * sortDirection[field];
+                if (a[field] > b[field]) return 1 * sortDirection[field];
+                return 0;
+            });
+            updateTransactionHistory();
+        }
+
+        function displaySavedSessions() {
+            sessionList.innerHTML = '';
+            for (const key in localStorage) {
+                if (key.startsWith('tfsa_')) {
+                    const sessionName = key.replace('tfsa_', '');
+                    const sessionItem = document.createElement('div');
+                    sessionItem.classList.add('session-item');
+                    sessionItem.textContent = sessionName;
+                    sessionItem.addEventListener('click', () => loadSession(sessionName));
+                    sessionList.appendChild(sessionItem);
+                }
+            }
+        }
+
+        function loadSession(username) {
+            const sessionData = localStorage.getItem(`tfsa_${username}`);
+            if (!sessionData) return;
+
+            const parsedData = JSON.parse(sessionData);
+            usernameInput.value = parsedData.username;
+            yearOfBirthInput.value = parsedData.yearOfBirth;
+            taxResidencyInput.value = parsedData.taxResidency;
+            transactions = parsedData.transactions.map(t => ({
+                ...t,
+                date: new Date(t.date)
+            }));
+
+            calculateContributionRoom();
+            updateTransactionHistory();
+        }
+
+        displaySavedSessions();
+    </script>
+</body>
+</html>
+
