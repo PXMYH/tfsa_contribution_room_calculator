@@ -322,10 +322,23 @@
 
             localStorage.setItem(`tfsa_${username}`, JSON.stringify(sessionData));
             displaySavedSessions();
-            clearData();
+            clearData(true); // Skip confirmation since we just saved
         }
 
-        function clearData() {
+        function hasUnsavedChanges() {
+            return transactions.length > 0 ||
+                   yearOfBirthInput.value ||
+                   taxResidencyInput.value;
+        }
+
+        function clearData(skipConfirmation = false) {
+            if (!skipConfirmation && hasUnsavedChanges()) {
+                if (!confirm('Are you sure you want to clear all data? Unsaved changes will be lost.')) {
+                    return;
+                }
+            }
+
+            usernameInput.value = '';
             yearOfBirthInput.value = '';
             taxResidencyInput.value = '';
             transactionDateInput.value = '';
@@ -420,6 +433,12 @@
         }
 
         function loadSession(username) {
+            if (hasUnsavedChanges()) {
+                if (!confirm('You have unsaved changes. Loading a session will overwrite them. Continue?')) {
+                    return;
+                }
+            }
+
             const sessionData = JSON.parse(localStorage.getItem(`tfsa_${username}`));
             if (sessionData) {
                 usernameInput.value = sessionData.username;
