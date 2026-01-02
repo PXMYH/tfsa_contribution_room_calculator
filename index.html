@@ -172,6 +172,50 @@
         let transactions = [];
         let sortDirection = { date: 1, type: 1 }; // 1 for ascending, -1 for descending
 
+        // Validation functions
+        function validateYearOfBirth(year) {
+            const currentYear = new Date().getFullYear();
+            const minYear = 1900;
+            const maxYear = currentYear - 18; // Must be 18+ to have TFSA
+
+            if (isNaN(year) || year < minYear || year > maxYear) {
+                return `Year of birth must be between ${minYear} and ${maxYear} (must be 18+ for TFSA)`;
+            }
+            return null;
+        }
+
+        function validateTaxResidency(year, yearOfBirth) {
+            const currentYear = new Date().getFullYear();
+            const minYear = 2009; // TFSA started in 2009
+
+            if (isNaN(year) || year < minYear || year > currentYear) {
+                return `Tax residency year must be between ${minYear} (TFSA start) and ${currentYear}`;
+            }
+            if (year < yearOfBirth) {
+                return 'Tax residency year cannot be before year of birth';
+            }
+            return null;
+        }
+
+        function validateInputs() {
+            const yearOfBirth = parseInt(yearOfBirthInput.value);
+            const residencyYear = parseInt(taxResidencyInput.value);
+
+            const birthError = validateYearOfBirth(yearOfBirth);
+            if (birthError) {
+                alert(birthError);
+                return false;
+            }
+
+            const residencyError = validateTaxResidency(residencyYear, yearOfBirth);
+            if (residencyError) {
+                alert(residencyError);
+                return false;
+            }
+
+            return true;
+        }
+
         addTransactionButton.addEventListener('click', addTransaction);
         saveSessionButton.addEventListener('click', saveSession);
         clearDataButton.addEventListener('click', clearData);
@@ -213,13 +257,22 @@
         }
 
         function addTransaction() {
-            const username = usernameInput.value;
+            // Validate year inputs first
+            if (!validateInputs()) {
+                return;
+            }
+
             const date = transactionDateInput.value;
             const type = document.querySelector('input[name="transaction-type"]:checked').value;
             const amount = parseFloat(amountInput.value);
 
-            if (!date || isNaN(amount) || amount <= 0) {
-                alert('Please provide valid transaction details.');
+            if (!date) {
+                alert('Please enter a transaction date.');
+                return;
+            }
+
+            if (isNaN(amount) || amount <= 0) {
+                alert('Please enter a valid amount greater than 0.');
                 return;
             }
 
@@ -237,6 +290,11 @@
             const username = usernameInput.value;
             if (!username) {
                 alert('Please enter a username to save the session.');
+                return;
+            }
+
+            // Validate inputs before saving
+            if (!validateInputs()) {
                 return;
             }
 
