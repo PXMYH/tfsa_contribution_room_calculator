@@ -179,23 +179,17 @@
         document.getElementById('sort-type').addEventListener('click', () => sortTransactions('type'));
 
         function calculateWithdrawalCarryForward() {
-            const currentDate = new Date();
-            const currentYear = currentDate.getFullYear();
-            
-            // Reset withdrawal carry forward
-            withdrawalCarryForward = 0;
-            
-            // Calculate withdrawals from previous year
-            const lastYearWithdrawals = transactions
+            const currentYear = new Date().getFullYear();
+
+            // TFSA rule: Withdrawals made in year X can be re-contributed starting Jan 1 of year X+1
+            // So we count ALL withdrawals from previous years (not current year)
+            withdrawalCarryForward = transactions
                 .filter(t => {
                     const transactionYear = new Date(t.date).getFullYear();
-                    return t.type === 'withdraw' && transactionYear === currentYear - 1;
+                    return t.type === 'withdraw' && transactionYear < currentYear;
                 })
                 .reduce((sum, t) => sum + t.amount, 0);
-            
-            // Add last year's withdrawals to next year's contribution room
-            withdrawalCarryForward = lastYearWithdrawals;
-            
+
             return withdrawalCarryForward;
         }
 
