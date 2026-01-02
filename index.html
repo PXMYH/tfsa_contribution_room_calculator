@@ -21,10 +21,25 @@
             background: none;
         }
         .session-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 5px 0;
+        }
+        .session-name {
             color: blue;
             cursor: pointer;
             text-decoration: underline;
-            margin: 5px 0;
+        }
+        .delete-session-btn {
+            color: red;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 0.9em;
+        }
+        .delete-session-btn:hover {
+            text-decoration: underline;
         }
         .form-buttons {
             display: flex;
@@ -379,10 +394,28 @@
                     const sessionName = key.replace('tfsa_', '');
                     const sessionItem = document.createElement('div');
                     sessionItem.classList.add('session-item');
-                    sessionItem.textContent = sessionName;
-                    sessionItem.addEventListener('click', () => loadSession(sessionName));
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.classList.add('session-name');
+                    nameSpan.textContent = sessionName;
+                    nameSpan.addEventListener('click', () => loadSession(sessionName));
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.classList.add('delete-session-btn');
+                    deleteBtn.textContent = '[Delete]';
+                    deleteBtn.addEventListener('click', () => deleteSession(sessionName));
+
+                    sessionItem.appendChild(nameSpan);
+                    sessionItem.appendChild(deleteBtn);
                     sessionList.appendChild(sessionItem);
                 }
+            }
+        }
+
+        function deleteSession(username) {
+            if (confirm(`Are you sure you want to delete session "${username}"?`)) {
+                localStorage.removeItem(`tfsa_${username}`);
+                displaySavedSessions();
             }
         }
 
