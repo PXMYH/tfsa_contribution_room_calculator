@@ -229,7 +229,8 @@
                 return;
             }
 
-            transactions.push({ date: new Date(date), type, amount });
+            // Store date as ISO string for consistent localStorage serialization
+            transactions.push({ date: date, type, amount });
             calculateContributionRoom();
             updateTransactionHistory();
 
