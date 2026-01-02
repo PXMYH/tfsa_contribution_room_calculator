@@ -125,6 +125,13 @@
             </div>
         </form>
 
+        <h2>Backup & Restore</h2>
+        <div class="d-flex gap-2 mb-3">
+            <button type="button" id="export-data" class="btn btn-info">Export All Data</button>
+            <button type="button" id="import-data" class="btn btn-warning">Import Data</button>
+            <input type="file" id="import-file-input" accept=".json" style="display: none;">
+        </div>
+
         <h2>Contribution Room</h2>
         <p id="current-room" class="alert alert-info">Available Contribution Room: </p>
         <p id="remaining-room" class="alert alert-info">Remaining Contribution Room: </p>
@@ -462,6 +469,90 @@
         }
 
         // ============================================
+        // EXPORT/IMPORT FUNCTIONS
+        // ============================================
+        function exportAllData() {
+            // Collect all sessions from localStorage
+            const allSessions = {};
+            for (const key in localStorage) {
+                if (key.startsWith('tfsa_')) {
+                    const sessionName = key.replace('tfsa_', '');
+                    allSessions[sessionName] = JSON.parse(localStorage.getItem(key));
+                }
+            }
+
+            // Create export data object
+            const exportData = {
+                exportDate: new Date().toISOString(),
+                sessions: allSessions
+            };
+
+            // Convert to JSON and create downloadable file
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+
+            // Create download link and trigger download
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.download = `tfsa_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(url);
+
+            alert('Data exported successfully!');
+        }
+
+        function importData() {
+            // Trigger file input click
+            document.getElementById('import-file-input').click();
+        }
+
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importData = JSON.parse(e.target.result);
+
+                    // Validate data structure
+                    if (!importData.sessions || typeof importData.sessions !== 'object') {
+                        alert('Invalid backup file format.');
+                        return;
+                    }
+
+                    // Confirm before overwriting
+                    const sessionCount = Object.keys(importData.sessions).length;
+                    if (!confirm(`This will import ${sessionCount} session(s). Existing sessions with the same names will be overwritten. Continue?`)) {
+                        return;
+                    }
+
+                    // Import all sessions
+                    let imported = 0;
+                    for (const sessionName in importData.sessions) {
+                        const sessionData = importData.sessions[sessionName];
+                        localStorage.setItem(`tfsa_${sessionName}`, JSON.stringify(sessionData));
+                        imported++;
+                    }
+
+                    displaySavedSessions();
+                    alert(`Successfully imported ${imported} session(s)!`);
+
+                } catch (error) {
+                    alert('Error reading backup file. Please ensure it is a valid TFSA backup file.');
+                    console.error('Import error:', error);
+                }
+            };
+
+            reader.readAsText(file);
+            // Reset file input so the same file can be imported again if needed
+            event.target.value = '';
+        }
+
+        // ============================================
         // EVENT LISTENERS
         // ============================================
         document.getElementById('add-transaction').addEventListener('click', addTransaction);
@@ -469,6 +560,9 @@
         document.getElementById('clear-data').addEventListener('click', () => clearData());
         document.getElementById('sort-date').addEventListener('click', () => sortTransactions('date'));
         document.getElementById('sort-type').addEventListener('click', () => sortTransactions('type'));
+        document.getElementById('export-data').addEventListener('click', exportAllData);
+        document.getElementById('import-data').addEventListener('click', importData);
+        document.getElementById('import-file-input').addEventListener('change', handleFileImport);
 
         // ============================================
         // INITIALIZATION
