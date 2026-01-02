@@ -148,63 +148,60 @@
     </div>
 
     <script>
+        // ============================================
+        // DOM ELEMENTS
+        // ============================================
         const usernameInput = document.getElementById('username');
         const yearOfBirthInput = document.getElementById('year-of-birth');
         const taxResidencyInput = document.getElementById('tax-residency');
         const transactionDateInput = document.getElementById('transaction-date');
-        const transactionTypeInputs = document.querySelectorAll('input[name="transaction-type"]');
         const amountInput = document.getElementById('amount');
         const currentRoomDisplay = document.getElementById('current-room');
         const remainingRoomDisplay = document.getElementById('remaining-room');
         const transactionHistory = document.getElementById('transaction-history');
-        const addTransactionButton = document.getElementById('add-transaction');
-        const saveSessionButton = document.getElementById('save-session');
-        const clearDataButton = document.getElementById('clear-data');
         const sessionList = document.getElementById('session-list');
 
-        const annualLimits = {
-            2009: 5000,
-            2010: 5000,
-            2011: 5000,
-            2012: 5000,
-            2013: 5500,
-            2014: 5500,
-            2015: 10000,
-            2016: 5500,
-            2017: 5500,
-            2018: 5500,
-            2019: 6000,
-            2020: 6000,
-            2021: 6000,
-            2022: 6000,
-            2023: 6500,
-            2024: 7000,
+        // ============================================
+        // CONSTANTS
+        // ============================================
+        // TFSA annual contribution limits by year (source: CRA)
+        const ANNUAL_LIMITS = {
+            2009: 5000, 2010: 5000, 2011: 5000, 2012: 5000,
+            2013: 5500, 2014: 5500, 2015: 10000, 2016: 5500,
+            2017: 5500, 2018: 5500, 2019: 6000, 2020: 6000,
+            2021: 6000, 2022: 6000, 2023: 6500, 2024: 7000,
             2025: 7000
         };
 
+        const TFSA_START_YEAR = 2009;
+        const MIN_BIRTH_YEAR = 1900;
+
+        // ============================================
+        // APPLICATION STATE
+        // ============================================
         let availableRoom = 0;
         let withdrawalCarryForward = 0;
         let transactions = [];
-        let sortDirection = { date: 1, type: 1 }; // 1 for ascending, -1 for descending
+        let sortDirection = { date: 1, type: 1 }; // 1 = ascending, -1 = descending
 
-        // Validation functions
+        // ============================================
+        // VALIDATION FUNCTIONS
+        // ============================================
         function validateYearOfBirth(year) {
             const currentYear = new Date().getFullYear();
-            const minYear = 1900;
             const maxYear = currentYear - 18; // Must be 18+ to have TFSA
 
-            if (isNaN(year) || year < minYear || year > maxYear) {
-                return `Year of birth must be between ${minYear} and ${maxYear} (must be 18+ for TFSA)`;
+            if (isNaN(year) || year < MIN_BIRTH_YEAR || year > maxYear) {
+                return `Year of birth must be between ${MIN_BIRTH_YEAR} and ${maxYear} (must be 18+ for TFSA)`;
             }
             return null;
         }
 
         function validateTaxResidency(year, yearOfBirth) {
             const currentYear = new Date().getFullYear();
-            const minYear = 2009; // TFSA started in 2009
 
-            if (isNaN(year) || year < minYear || year > currentYear) {
-                return `Tax residency year must be between ${minYear} (TFSA start) and ${currentYear}`;
+            if (isNaN(year) || year < TFSA_START_YEAR || year > currentYear) {
+                return `Tax residency year must be between ${TFSA_START_YEAR} (TFSA start) and ${currentYear}`;
             }
             if (year < yearOfBirth) {
                 return 'Tax residency year cannot be before year of birth';
@@ -231,12 +228,9 @@
             return true;
         }
 
-        addTransactionButton.addEventListener('click', addTransaction);
-        saveSessionButton.addEventListener('click', saveSession);
-        clearDataButton.addEventListener('click', clearData);
-        document.getElementById('sort-date').addEventListener('click', () => sortTransactions('date'));
-        document.getElementById('sort-type').addEventListener('click', () => sortTransactions('type'));
-
+        // ============================================
+        // TFSA CALCULATION FUNCTIONS
+        // ============================================
         function calculateWithdrawalCarryForward() {
             const currentYear = new Date().getFullYear();
 
@@ -256,23 +250,25 @@
             const yearOfBirth = parseInt(yearOfBirthInput.value);
             const residencyYear = parseInt(taxResidencyInput.value);
             const currentYear = new Date().getFullYear();
+
+            // Eligibility starts when person turns 18 OR becomes tax resident, whichever is later
             const eligibilityYear = Math.max(yearOfBirth + 18, residencyYear);
 
             availableRoom = 0;
             for (let year = eligibilityYear; year <= currentYear; year++) {
-                if (annualLimits[year]) {
-                    availableRoom += annualLimits[year];
+                if (ANNUAL_LIMITS[year]) {
+                    availableRoom += ANNUAL_LIMITS[year];
                 }
             }
 
-            // Calculate withdrawal carry forward
             calculateWithdrawalCarryForward();
-
             updateContributionRoom();
         }
 
+        // ============================================
+        // TRANSACTION FUNCTIONS
+        // ============================================
         function addTransaction() {
-            // Validate year inputs first
             if (!validateInputs()) {
                 return;
             }
@@ -291,14 +287,80 @@
                 return;
             }
 
-            // Store date as ISO string for consistent localStorage serialization
-            transactions.push({ date: date, type, amount });
+            // Store date as string for consistent localStorage serialization
+            transactions.push({ date, type, amount });
             calculateContributionRoom();
             updateTransactionHistory();
 
+            // Reset form fields
             transactionDateInput.value = '';
             document.getElementById('deposit').checked = true;
             amountInput.value = '';
+        }
+
+        function removeTransaction(index) {
+            transactions.splice(index, 1);
+            calculateContributionRoom();
+            updateTransactionHistory();
+        }
+
+        function sortTransactions(field) {
+            sortDirection[field] *= -1;
+            transactions.sort((a, b) => {
+                if (field === 'date') {
+                    const dateA = new Date(a.date).getTime();
+                    const dateB = new Date(b.date).getTime();
+                    return (dateA - dateB) * sortDirection[field];
+                }
+                return (a[field] < b[field] ? -1 : 1) * sortDirection[field];
+            });
+            updateTransactionHistory();
+        }
+
+        // ============================================
+        // UI UPDATE FUNCTIONS
+        // ============================================
+        function updateContributionRoom() {
+            const totalDeposits = transactions
+                .filter(t => t.type === 'deposit')
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            const remainingContributionRoom = availableRoom - totalDeposits + withdrawalCarryForward;
+
+            currentRoomDisplay.textContent = `Available Contribution Room: $${availableRoom.toFixed(2)}`;
+            remainingRoomDisplay.textContent = `Remaining Contribution Room: $${remainingContributionRoom.toFixed(2)}`;
+        }
+
+        function updateTransactionHistory() {
+            transactionHistory.innerHTML = '';
+
+            transactions.forEach((t, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(t.date).toISOString().split('T')[0]}</td>
+                    <td>${t.type}</td>
+                    <td>$${t.amount.toFixed(2)}</td>
+                    <td><button class="remove-btn" data-index="${index}">Remove</button></td>
+                `;
+                transactionHistory.appendChild(row);
+            });
+
+            // Attach event listeners to remove buttons
+            document.querySelectorAll('.remove-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = parseInt(e.target.getAttribute('data-index'));
+                    removeTransaction(index);
+                });
+            });
+        }
+
+        // ============================================
+        // SESSION MANAGEMENT FUNCTIONS
+        // ============================================
+        function hasUnsavedChanges() {
+            return transactions.length > 0 ||
+                   yearOfBirthInput.value ||
+                   taxResidencyInput.value;
         }
 
         function saveSession() {
@@ -308,7 +370,6 @@
                 return;
             }
 
-            // Validate inputs before saving
             if (!validateInputs()) {
                 return;
             }
@@ -325,10 +386,58 @@
             clearData(true); // Skip confirmation since we just saved
         }
 
-        function hasUnsavedChanges() {
-            return transactions.length > 0 ||
-                   yearOfBirthInput.value ||
-                   taxResidencyInput.value;
+        function loadSession(username) {
+            if (hasUnsavedChanges()) {
+                if (!confirm('You have unsaved changes. Loading a session will overwrite them. Continue?')) {
+                    return;
+                }
+            }
+
+            const sessionData = JSON.parse(localStorage.getItem(`tfsa_${username}`));
+            if (sessionData) {
+                usernameInput.value = sessionData.username;
+                yearOfBirthInput.value = sessionData.yearOfBirth;
+                taxResidencyInput.value = sessionData.taxResidency;
+                transactions = sessionData.transactions || [];
+                calculateContributionRoom();
+                updateTransactionHistory();
+            } else {
+                alert('Session not found!');
+            }
+        }
+
+        function deleteSession(username) {
+            if (confirm(`Are you sure you want to delete session "${username}"?`)) {
+                localStorage.removeItem(`tfsa_${username}`);
+                displaySavedSessions();
+            }
+        }
+
+        function displaySavedSessions() {
+            sessionList.innerHTML = '';
+
+            for (const key in localStorage) {
+                if (key.startsWith('tfsa_')) {
+                    const sessionName = key.replace('tfsa_', '');
+
+                    const sessionItem = document.createElement('div');
+                    sessionItem.classList.add('session-item');
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.classList.add('session-name');
+                    nameSpan.textContent = sessionName;
+                    nameSpan.addEventListener('click', () => loadSession(sessionName));
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.classList.add('delete-session-btn');
+                    deleteBtn.textContent = '[Delete]';
+                    deleteBtn.addEventListener('click', () => deleteSession(sessionName));
+
+                    sessionItem.appendChild(nameSpan);
+                    sessionItem.appendChild(deleteBtn);
+                    sessionList.appendChild(sessionItem);
+                }
+            }
         }
 
         function clearData(skipConfirmation = false) {
@@ -352,107 +461,18 @@
             updateTransactionHistory();
         }
 
-        function updateContributionRoom() {
-            const totalDeposits = transactions.filter(t => t.type === 'deposit').reduce((sum, t) => sum + t.amount, 0);
-            const totalWithdrawals = transactions.filter(t => t.type === 'withdraw').reduce((sum, t) => sum + t.amount, 0);
-            const remainingContributionRoom = availableRoom - totalDeposits + withdrawalCarryForward;
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        document.getElementById('add-transaction').addEventListener('click', addTransaction);
+        document.getElementById('save-session').addEventListener('click', saveSession);
+        document.getElementById('clear-data').addEventListener('click', () => clearData());
+        document.getElementById('sort-date').addEventListener('click', () => sortTransactions('date'));
+        document.getElementById('sort-type').addEventListener('click', () => sortTransactions('type'));
 
-            currentRoomDisplay.textContent = `Available Contribution Room: $${availableRoom.toFixed(2)}`;
-            remainingRoomDisplay.textContent = `Remaining Contribution Room: $${remainingContributionRoom.toFixed(2)}`;
-        }
-
-        function updateTransactionHistory() {
-            transactionHistory.innerHTML = '';
-            transactions.forEach((t, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${new Date(t.date).toISOString().split('T')[0]}</td>
-                    <td>${t.type}</td>
-                    <td>$${t.amount.toFixed(2)}</td>
-                    <td><button class="remove-btn" data-index="${index}">Remove</button></td>
-                `;
-                transactionHistory.appendChild(row);
-            });
-
-            document.querySelectorAll('.remove-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const index = e.target.getAttribute('data-index');
-                    transactions.splice(index, 1);
-                    updateTransactionHistory();
-                    updateContributionRoom();
-                });
-            });
-        }
-
-        function sortTransactions(field) {
-            sortDirection[field] *= -1; // Toggle between ascending and descending
-            transactions.sort((a, b) => {
-                if (field === 'date') {
-                    // Convert dates to timestamps for comparison
-                    const dateA = new Date(a.date).getTime();
-                    const dateB = new Date(b.date).getTime();
-                    return (dateA - dateB) * sortDirection[field];
-                } else {
-                    // For type field
-                    return (a[field] < b[field] ? -1 : 1) * sortDirection[field];
-                }
-            });
-            updateTransactionHistory();
-        }
-
-        function displaySavedSessions() {
-            sessionList.innerHTML = '';
-            for (const key in localStorage) {
-                if (key.startsWith('tfsa_')) {
-                    const sessionName = key.replace('tfsa_', '');
-                    const sessionItem = document.createElement('div');
-                    sessionItem.classList.add('session-item');
-
-                    const nameSpan = document.createElement('span');
-                    nameSpan.classList.add('session-name');
-                    nameSpan.textContent = sessionName;
-                    nameSpan.addEventListener('click', () => loadSession(sessionName));
-
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.classList.add('delete-session-btn');
-                    deleteBtn.textContent = '[Delete]';
-                    deleteBtn.addEventListener('click', () => deleteSession(sessionName));
-
-                    sessionItem.appendChild(nameSpan);
-                    sessionItem.appendChild(deleteBtn);
-                    sessionList.appendChild(sessionItem);
-                }
-            }
-        }
-
-        function deleteSession(username) {
-            if (confirm(`Are you sure you want to delete session "${username}"?`)) {
-                localStorage.removeItem(`tfsa_${username}`);
-                displaySavedSessions();
-            }
-        }
-
-        function loadSession(username) {
-            if (hasUnsavedChanges()) {
-                if (!confirm('You have unsaved changes. Loading a session will overwrite them. Continue?')) {
-                    return;
-                }
-            }
-
-            const sessionData = JSON.parse(localStorage.getItem(`tfsa_${username}`));
-            if (sessionData) {
-                usernameInput.value = sessionData.username;
-                yearOfBirthInput.value = sessionData.yearOfBirth;
-                taxResidencyInput.value = sessionData.taxResidency;
-                transactions = sessionData.transactions || [];
-                calculateContributionRoom();
-                updateTransactionHistory();
-            } else {
-                alert('Session not found!');
-            }
-        }
-
-        // Initialize page
+        // ============================================
+        // INITIALIZATION
+        // ============================================
         displaySavedSessions();
     </script>
 </body>
